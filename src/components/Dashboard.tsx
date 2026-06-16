@@ -10,6 +10,7 @@ type Url = {
 };
 type MyUrls = { myUrls: Url[] };
 type MeData = { me: { id: number; email: string } };
+type CreateData = { createUrl: { slug: string; originalUrl: string; clickCount: number } };
 type Click = { ipAddress?: string | null; userAgent?: string | null; clickedAt: string };
 type Stats = {
   urlStats: {
@@ -26,18 +27,33 @@ const apiBase = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000/graphql'
 );
 const shortUrl = (slug: string) => `${apiBase}/r/${slug}`;
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <button className="link" onClick={copy}>
+      {copied ? 'copied!' : 'copy'}
+    </button>
+  );
+}
+
 export function Dashboard({ onLogout }: { onLogout: () => void }) {
   const { data: meData } = useQuery<MeData>(ME);
   const { data, refetch } = useQuery<MyUrls>(MY_URLS);
-  const [createUrl, { loading, error }] = useMutation(CREATE_URL);
+  const [createUrl, { loading, error }] = useMutation<CreateData>(CREATE_URL);
 
   const [original, setOriginal] = useState('');
   const [customSlug, setCustomSlug] = useState('');
+  const [created, setCreated] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createUrl({
+    const res = await createUrl({
       variables: {
         input: {
           originalUrl: original,
@@ -45,6 +61,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         },
       },
     });
+    const slug = res.data?.createUrl.slug;
+    if (slug) setCreated(slug);
     setOriginal('');
     setCustomSlug('');
     await refetch();
@@ -82,6 +100,16 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
           </button>
         </form>
         {error && <p className="error">{error.message}</p>}
+
+        {created && (
+          <div className="created">
+            <span>Your short link:</span>
+            <a href={shortUrl(created)} target="_blank" rel="noreferrer">
+              {shortUrl(created)}
+            </a>
+            <CopyButton text={shortUrl(created)} />
+          </div>
+        )}
       </div>
 
       <div className="card">
@@ -97,6 +125,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             </div>
             <div className="meta">
               <span>{u.clickCount} clicks</span>
+              <CopyButton text={shortUrl(u.slug)} />
               <button className="link" onClick={() => setSelected(u.slug)}>
                 stats
               </button>
@@ -105,21 +134,49 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         ))}
       </div>
 
-      {selected && <StatsPanel slug={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <StatsPanel
+          slug={selected}
+          onClose={() => setSelected(null)}
+          onChange={() => refetch()}
+        />
+      )}
     </div>
   );
 }
 
-function StatsPanel({ slug, onClose }: { slug: string; onClose: () => void }) {
-  const { data, loading } = useQuery<Stats>(URL_STATS, { variables: { slug } });
+function StatsPanel({
+  slug,
+  onClose,
+  onChange,
+}: {
+  slug: string;
+  onClose: () => void;
+  onChange: () => void;
+}) {
+  // network-only so reopening/refreshing always shows the latest clicks.
+  const { data, loading, refetch } = useQuery<Stats>(URL_STATS, {
+    variables: { slug },
+    fetchPolicy: 'network-only',
+  });
+
+  const refresh = async () => {
+    await refetch();
+    onChange(); // keep the click counts in the list in sync too
+  };
 
   return (
     <div className="card">
       <div className="topbar">
         <h2>Stats — {slug}</h2>
-        <button className="link" onClick={onClose}>
-          close
-        </button>
+        <span>
+          <button className="link" onClick={refresh}>
+            refresh
+          </button>{' '}
+          <button className="link" onClick={onClose}>
+            close
+          </button>
+        </span>
       </div>
       {loading && <p className="muted">Loading...</p>}
       {data && (

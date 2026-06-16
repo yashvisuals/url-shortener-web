@@ -116,3 +116,16 @@ a {
   color: #4f46e5;
   word-break: break-all;
 }
+
+.created {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  font-size: 0.9rem;
+}
