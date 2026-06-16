@@ -124,7 +124,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
               <div className="muted small">{u.originalUrl}</div>
             </div>
             <div className="meta">
-              <span>{u.clickCount} clicks</span>
+              <span className="pill">{u.clickCount} clicks</span>
               <CopyButton text={shortUrl(u.slug)} />
               <button className="link" onClick={() => setSelected(u.slug)}>
                 stats

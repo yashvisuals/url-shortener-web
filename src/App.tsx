@@ -14,7 +14,11 @@ export default function App() {
 
   return (
     <div className="app">
-      <h1>🔗 url-shortener</h1>
+      <header className="brand">
+        <div className="brand-mark">🔗</div>
+        <h1>url-shortener</h1>
+        <p className="tagline">Shorten links and track every click.</p>
+      </header>
       {loggedIn ? (
         <Dashboard onLogout={logout} />
       ) : (
