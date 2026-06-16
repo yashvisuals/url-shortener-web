@@ -3,6 +3,9 @@
 React frontend for the [url-shortener](https://github.com/yashvisuals/url-shortener)
 GraphQL API. Register/log in, shorten URLs, and see click stats.
 
+**Live demo:** https://url-shortener-web-eight.vercel.app
+_(free tier — the first request may take ~30s while the API wakes up)_
+
 ## Stack
 
 - React + TypeScript (Vite)
